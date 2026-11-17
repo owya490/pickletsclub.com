@@ -1,6 +1,6 @@
 import type { ClubEvent } from "./sportshub";
 
-/** Synthetic events shown in local development when no partner key is configured. */
+/** Synthetic events shown when no SPORTSHUB partner key is configured. */
 export function sampleEvents(): ClubEvent[] {
   const now = new Date();
   const at = (days: number, sydneyHour: number, minutes = 0) =>

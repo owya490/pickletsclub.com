@@ -9,7 +9,7 @@ import { dayHeading, formatLongDate, sydneyDayKey } from "@/lib/format";
 import { sampleEvents } from "@/lib/sample-events";
 import { FeedError, getEvents, PARTNER_KEY, type ClubEvent, type FeedErrorKind } from "@/lib/sportshub";
 
-const PREVIEW_MODE = !PARTNER_KEY && process.env.NODE_ENV === "development";
+const PREVIEW_MODE = !PARTNER_KEY;
 
 type Feed =
   | { state: "loading" }
@@ -30,10 +30,6 @@ export default function Home() {
 
     if (PREVIEW_MODE) {
       setFeed({ state: "ready", events: sampleEvents() });
-      return;
-    }
-    if (!PARTNER_KEY) {
-      setFeed({ state: "error", kind: "access" });
       return;
     }
     getEvents()
