@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { startBooking, type ClubEvent } from "@/lib/sportshub";
+import { SPORTSHUB_URL, startBooking, type ClubEvent } from "@/lib/sportshub";
 import { formatLongDate, formatPrice, formatTimeRange, sydneyDayKey } from "@/lib/format";
 import { isRichText, richTextHtml } from "@/lib/rich-text";
 import { eventStatus, StatusBadge } from "./EventCard";
@@ -269,9 +269,16 @@ function BookingForm({
                 ? `Book · ${formatPrice(ticket.priceCents * qty)}`
                 : "Book"}
         </button>
-        {event.acceptsStripe && ticket && ticket.priceCents > 0 && !joinsWaitlist && (
-          <p className="text-center text-[12px] text-faint">Secure checkout with Stripe via SPORTSHUB</p>
-        )}
+        <p className="text-center text-[12px] text-faint">
+          <a
+            href={SPORTSHUB_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2 hover:text-ink"
+          >
+            Powered by SPORTSHUB
+          </a>
+        </p>
       </div>
     </div>
   );
