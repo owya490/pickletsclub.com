@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { startBooking, type ClubEvent } from "@/lib/sportshub";
 import { formatLongDate, formatPrice, formatTimeRange, sydneyDayKey } from "@/lib/format";
+import { isRichText, richTextHtml } from "@/lib/rich-text";
 import { eventStatus, StatusBadge } from "./EventCard";
 import { ClockIcon, CloseIcon, PinIcon } from "./icons";
 
@@ -151,9 +152,15 @@ function BookingForm({
           )}
         </div>
 
-        {event.description && (
-          <p className="whitespace-pre-line text-sm leading-relaxed text-muted">{event.description}</p>
-        )}
+        {event.description &&
+          (isRichText(event.description) ? (
+            <div
+              className="text-sm leading-relaxed text-muted [&_a]:font-medium [&_a]:text-ink [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-line [&_blockquote]:pl-3 [&_h2]:mb-1 [&_h2]:font-display [&_h2]:text-xl [&_h2]:text-ink [&_h3]:mb-1 [&_h3]:font-semibold [&_h3]:text-ink [&_ol]:list-decimal [&_ol]:pl-5 [&_p+p]:mt-2 [&_ul]:list-disc [&_ul]:pl-5"
+              dangerouslySetInnerHTML={{ __html: richTextHtml(event.description) }}
+            />
+          ) : (
+            <p className="whitespace-pre-line text-sm leading-relaxed text-muted">{event.description}</p>
+          ))}
 
         {event.ticketTypes.length === 0 ? (
           <p className="rounded-lg bg-canvas p-4 text-sm text-muted">
