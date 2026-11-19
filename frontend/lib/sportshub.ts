@@ -3,15 +3,6 @@ const API_URL =
 const BOOKING_ORIGIN = "https://www.sportshub.net.au";
 const INIT_TIMEOUT_MS = 20_000;
 
-/** Server-only. Bracket access so Next does not inline this at build time. */
-function partnerKey(): string {
-  return process.env["SPORTSHUB_PARTNER_API_KEY"]?.trim() ?? "";
-}
-
-export function hasPartnerKey(): boolean {
-  return partnerKey().length > 0;
-}
-
 export type TicketType = {
   id: string;
   name: string;
@@ -59,12 +50,12 @@ const isBool = (v: unknown): v is boolean => typeof v === "boolean";
 const isNullableString = (v: unknown): v is string | null => v === null || isString(v);
 const isTimestamp = (v: unknown): v is string => isString(v) && !Number.isNaN(Date.parse(v));
 
-function post(body: unknown, signal?: AbortSignal) {
+function post(partnerKey: string, body: unknown, signal?: AbortSignal) {
   return fetch(API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Sportshub-Partner-Key": partnerKey(),
+      "X-Sportshub-Partner-Key": partnerKey,
     },
     credentials: "omit",
     cache: "no-store",
@@ -154,10 +145,10 @@ function parseEvent(raw: unknown): ClubEvent {
   };
 }
 
-export async function getEvents(): Promise<ClubEvent[]> {
+export async function getEvents(partnerKey: string): Promise<ClubEvent[]> {
   let res: Response;
   try {
-    res = await post({ endpointType: "GET_PARTNER_EVENTS", data: {} });
+    res = await post(partnerKey, { endpointType: "GET_PARTNER_EVENTS", data: {} });
   } catch {
     throw new FeedError("network");
   }
@@ -192,6 +183,7 @@ function isValidEntryUrl(v: unknown): v is string {
 }
 
 export async function startBooking(
+  partnerKey: string,
   eventId: string,
   eventTicketTypeId: string,
   numTickets: number,
@@ -200,6 +192,7 @@ export async function startBooking(
   const timer = setTimeout(() => controller.abort(), INIT_TIMEOUT_MS);
   try {
     const res = await post(
+      partnerKey,
       {
         endpointType: "INIT_PARTNER_FULFILMENT_SESSION",
         data: { eventId, eventTicketTypeId, numTickets },
