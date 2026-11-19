@@ -58,6 +58,7 @@ export function sampleEvents(): ClubEvent[] {
       location: "Centennial Park Courts, NSW",
       startDate: at(6, 8),
       endDate: at(6, 10),
+      acceptsStripe: false,
       ticketTypes: [{ id: "ga", name: "General Admission", priceCents: 1500, soldOut: false, vacancy: 14 }],
     },
     {
@@ -69,6 +70,7 @@ export function sampleEvents(): ClubEvent[] {
       startDate: at(12, 10),
       endDate: at(12, 15),
       maxTicketsPerTransaction: 2,
+      bookingApprovalEnabled: true,
       ticketTypes: [{ id: "pair", name: "Pair entry", priceCents: 6000, soldOut: false, vacancy: 3 }],
     },
   ];

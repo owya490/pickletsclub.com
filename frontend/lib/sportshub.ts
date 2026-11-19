@@ -1,6 +1,7 @@
 const API_URL =
   "https://australia-southeast1-socialsportsprod.cloudfunctions.net/globalAppController";
-const BOOKING_ORIGIN = "https://www.sportshub.net.au";
+export const SPORTSHUB_URL = "https://www.sportshub.net.au";
+const BOOKING_ORIGIN = SPORTSHUB_URL;
 const INIT_TIMEOUT_MS = 20_000;
 
 export type TicketType = {

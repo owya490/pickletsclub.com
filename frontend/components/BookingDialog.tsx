@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { startBooking, type ClubEvent } from "@/lib/sportshub";
+import { SPORTSHUB_URL, startBooking, type ClubEvent } from "@/lib/sportshub";
 import { formatLongDate, formatPrice, formatTimeRange, sydneyDayKey } from "@/lib/format";
 import { isRichText, richTextHtml } from "@/lib/rich-text";
 import { eventStatus, StatusBadge } from "./EventCard";
@@ -79,15 +79,19 @@ function BookingForm({
 
   const ticket = event.ticketTypes.find((t) => t.id === ticketId) ?? null;
   const status = eventStatus(event);
+  const paymentsInactive = !event.acceptsStripe && event.ticketTypes.some((t) => t.priceCents > 0);
+  const joinsWaitlist = !paymentsInactive && !!ticket?.soldOut && event.waitlistEnabled;
+  const needsApproval = !paymentsInactive && event.bookingApprovalEnabled;
   const maxQuantity = Math.max(
     1,
     Math.min(
       event.maxTicketsPerTransaction ?? DEFAULT_MAX_TICKETS,
-      ticket && !ticket.soldOut && ticket.vacancy !== null && ticket.vacancy > 0 ? ticket.vacancy : Infinity,
+      !joinsWaitlist && ticket && !ticket.soldOut && ticket.vacancy !== null && ticket.vacancy > 0
+        ? ticket.vacancy
+        : Infinity,
     ),
   );
   const qty = Math.min(quantity, maxQuantity);
-  const joinsWaitlist = !!ticket?.soldOut && event.waitlistEnabled;
   const locked = phase.kind === "submitting" || phase.kind === "redirecting";
 
   async function book() {
@@ -162,12 +166,17 @@ function BookingForm({
             <p className="whitespace-pre-line text-sm leading-relaxed text-muted">{event.description}</p>
           ))}
 
-        {event.ticketTypes.length === 0 ? (
+        {paymentsInactive ? (
+          <p className="rounded-lg bg-canvas p-4 text-sm leading-relaxed text-muted">
+            Online payments aren&apos;t available for this session, so it can&apos;t be booked here.
+          </p>
+        ) : event.ticketTypes.length === 0 ? (
           <p className="rounded-lg bg-canvas p-4 text-sm text-muted">
             Tickets for this session aren&apos;t available to book online yet.
           </p>
         ) : (
           <>
+            {!(joinsWaitlist && event.ticketTypes.length === 1) && (
             <fieldset className="space-y-2" disabled={locked}>
               <legend className="mb-2 text-[12px] font-medium tracking-[0.08em] text-muted uppercase">Ticket</legend>
               {event.ticketTypes.map((t) => (
@@ -198,6 +207,7 @@ function BookingForm({
                 </label>
               ))}
             </fieldset>
+            )}
 
             <div className="flex items-center justify-between">
               <span className="text-[12px] font-medium tracking-[0.08em] text-muted uppercase">Players</span>
@@ -226,12 +236,21 @@ function BookingForm({
           </>
         )}
 
-        {(status || event.bookingApprovalEnabled) && (
+        {joinsWaitlist && (
+          <p className="text-sm leading-relaxed text-muted">
+            {needsApproval
+              ? "This session is full. Join the waitlist and the organiser will confirm if a spot opens."
+              : "This session is full. Join the waitlist and you'll be contacted if a spot opens."}
+          </p>
+        )}
+        {needsApproval && !joinsWaitlist && (
+          <p className="text-sm leading-relaxed text-muted">
+            The organiser approves each request before it&apos;s confirmed.
+          </p>
+        )}
+        {!paymentsInactive && !joinsWaitlist && !needsApproval && status && (
           <div className="flex flex-wrap gap-2">
-            {status && <StatusBadge status={status} />}
-            {event.bookingApprovalEnabled && (
-              <StatusBadge status={{ label: "Organiser approval required", tone: "muted" }} />
-            )}
+            <StatusBadge status={status} />
           </div>
         )}
       </div>
@@ -255,23 +274,40 @@ function BookingForm({
           <p className="text-center text-sm text-muted">Booking is disabled in this preview.</p>
         ) : null}
 
-        <button
-          type="button"
-          onClick={book}
-          disabled={!ticket || locked || unconfirmed || !bookingEnabled}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-forest px-6 text-[15px] font-medium text-paper transition-colors hover:bg-[#15281c] disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {phase.kind === "submitting"
-            ? "Starting booking…"
-            : joinsWaitlist
-              ? "Join waitlist"
-              : ticket
-                ? `Book · ${formatPrice(ticket.priceCents * qty)}`
-                : "Book"}
-        </button>
-        {event.acceptsStripe && ticket && ticket.priceCents > 0 && !joinsWaitlist && (
-          <p className="text-center text-[12px] text-faint">Secure checkout with Stripe via SPORTSHUB</p>
+        {!paymentsInactive && (
+          <button
+            type="button"
+            onClick={book}
+            disabled={!ticket || locked || unconfirmed || !bookingEnabled}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-forest px-6 text-[15px] font-medium text-paper transition-colors hover:bg-[#15281c] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {phase.kind === "submitting"
+              ? joinsWaitlist
+                ? "Joining waitlist…"
+                : needsApproval
+                  ? "Sending request…"
+                  : "Starting booking…"
+              : joinsWaitlist
+                ? "Join waitlist"
+                : needsApproval
+                  ? ticket
+                    ? `Request · ${formatPrice(ticket.priceCents * qty)}`
+                    : "Request a spot"
+                  : ticket
+                    ? `Book · ${formatPrice(ticket.priceCents * qty)}`
+                    : "Book"}
+          </button>
         )}
+        <p className="text-center text-[12px] text-faint">
+          <a
+            href={SPORTSHUB_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2 hover:text-ink"
+          >
+            Powered by SPORTSHUB
+          </a>
+        </p>
       </div>
     </div>
   );

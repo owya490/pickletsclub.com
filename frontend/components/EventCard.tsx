@@ -8,6 +8,9 @@ export function eventStatus(event: ClubEvent): Status | null {
   const tickets = event.ticketTypes;
   if (tickets.length === 0) return { label: "Not bookable yet", tone: "muted" };
   if (event.paused) return { label: "Paused", tone: "muted" };
+  if (!event.acceptsStripe && tickets.some((t) => t.priceCents > 0)) {
+    return { label: "Payments inactive", tone: "muted" };
+  }
   if (tickets.every((t) => t.soldOut)) {
     return event.waitlistEnabled ? { label: "Waitlist", tone: "pink" } : { label: "Sold out", tone: "muted" };
   }

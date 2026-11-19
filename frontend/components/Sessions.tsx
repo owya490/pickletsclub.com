@@ -7,7 +7,7 @@ import { Calendar } from "@/components/Calendar";
 import { EventCard } from "@/components/EventCard";
 import { dayHeading, formatLongDate, sydneyDayKey } from "@/lib/format";
 import { sampleEvents } from "@/lib/sample-events";
-import { FeedError, getEvents, type ClubEvent, type FeedErrorKind } from "@/lib/sportshub";
+import { FeedError, getEvents, SPORTSHUB_URL, type ClubEvent, type FeedErrorKind } from "@/lib/sportshub";
 
 type Feed =
   | { state: "loading" }
@@ -193,7 +193,20 @@ export function Sessions({ partnerKey }: { partnerKey: string }) {
       <footer className="border-t border-line">
         <div className="mx-auto flex max-w-6xl flex-col gap-1 px-5 py-5 text-[12px] text-muted sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <span className="font-medium text-ink">Picklets Club</span>
-          <span>Times in Sydney · Checkout by SPORTSHUB</span>
+          <span className="inline-flex flex-wrap items-center gap-x-1.5">
+            <span>Times in Sydney</span>
+            <span aria-hidden>·</span>
+            <a
+              href={SPORTSHUB_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-medium text-ink underline-offset-2 hover:underline"
+            >
+              Powered by
+              <Image src="/sportshub-logo.png" alt="" width={16} height={16} className="size-4" />
+              SPORTSHUB
+            </a>
+          </span>
         </div>
       </footer>
 
