@@ -1,12 +1,34 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { startBooking, type ClubEvent } from "@/lib/sportshub";
+import type { BookingResult, ClubEvent } from "@/lib/sportshub";
 import { formatLongDate, formatPrice, formatTimeRange, sydneyDayKey } from "@/lib/format";
 import { eventStatus, StatusBadge } from "./EventCard";
 import { ClockIcon, CloseIcon, PinIcon } from "./icons";
 
 const DEFAULT_MAX_TICKETS = 10;
+const BOOKING_ORIGIN = "https://www.sportshub.net.au";
+
+function isBookingResult(v: unknown): v is BookingResult {
+  if (!v || typeof v !== "object") return false;
+  const kind = (v as { kind?: unknown }).kind;
+  if (kind === "ok") return isSafeEntryUrl((v as { entryUrl?: unknown }).entryUrl);
+  if (kind === "rejected") {
+    const message = (v as { message?: unknown }).message;
+    return message === null || typeof message === "string";
+  }
+  return kind === "access" || kind === "unknown";
+}
+
+function isSafeEntryUrl(v: unknown): v is string {
+  if (typeof v !== "string" || !v) return false;
+  try {
+    const url = new URL(v);
+    return url.origin === BOOKING_ORIGIN && url.pathname.startsWith("/fulfilment/") && !url.username && !url.password;
+  } catch {
+    return false;
+  }
+}
 
 type Phase =
   | { kind: "idle" }
@@ -92,7 +114,22 @@ function BookingForm({
     onBusyChange(true);
     setPhase({ kind: "submitting" });
 
-    const result = await startBooking(event.eventId, ticket.id, qty);
+    let result: BookingResult;
+    try {
+      const res = await fetch("/api/booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventId: event.eventId,
+          eventTicketTypeId: ticket.id,
+          numTickets: qty,
+        }),
+      });
+      const body: unknown = await res.json().catch(() => null);
+      result = isBookingResult(body) ? body : { kind: "unknown" };
+    } catch {
+      result = { kind: "unknown" };
+    }
 
     onBusyChange(false);
     if (result.kind === "ok") {

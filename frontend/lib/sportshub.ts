@@ -3,7 +3,14 @@ const API_URL =
 const BOOKING_ORIGIN = "https://www.sportshub.net.au";
 const INIT_TIMEOUT_MS = 20_000;
 
-export const PARTNER_KEY = process.env.NEXT_PUBLIC_SPORTSHUB_PARTNER_KEY ?? "";
+/** Server-only. Bracket access so Next does not inline this at build time. */
+function partnerKey(): string {
+  return process.env["SPORTSHUB_PARTNER_API_KEY"]?.trim() ?? "";
+}
+
+export function hasPartnerKey(): boolean {
+  return partnerKey().length > 0;
+}
 
 export type TicketType = {
   id: string;
@@ -57,7 +64,7 @@ function post(body: unknown, signal?: AbortSignal) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Sportshub-Partner-Key": PARTNER_KEY,
+      "X-Sportshub-Partner-Key": partnerKey(),
     },
     credentials: "omit",
     cache: "no-store",

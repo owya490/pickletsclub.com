@@ -7,9 +7,7 @@ import { Calendar } from "@/components/Calendar";
 import { EventCard } from "@/components/EventCard";
 import { dayHeading, formatLongDate, sydneyDayKey } from "@/lib/format";
 import { sampleEvents } from "@/lib/sample-events";
-import { FeedError, getEvents, PARTNER_KEY, type ClubEvent, type FeedErrorKind } from "@/lib/sportshub";
-
-const PREVIEW_MODE = !PARTNER_KEY;
+import type { ClubEvent, FeedErrorKind } from "@/lib/sportshub";
 
 type Feed =
   | { state: "loading" }
@@ -23,18 +21,33 @@ export default function Home() {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [openEventId, setOpenEventId] = useState<string | null>(null);
   const [unconfirmed, setUnconfirmed] = useState<Set<string>>(new Set());
+  const [bookingEnabled, setBookingEnabled] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setTodayKey(sydneyDayKey(new Date()));
 
-    if (PREVIEW_MODE) {
-      setFeed({ state: "ready", events: sampleEvents() });
-      return;
-    }
-    getEvents()
-      .then((events) => !cancelled && setFeed({ state: "ready", events }))
-      .catch((err) => !cancelled && setFeed({ state: "error", kind: err instanceof FeedError ? err.kind : "unexpected" }));
+    fetch("/api/events", { cache: "no-store" })
+      .then(async (res) => {
+        const body: unknown = await res.json().catch(() => null);
+        if (cancelled) return;
+        if (isRecord(body) && body.configured === false) {
+          setBookingEnabled(false);
+          setFeed({ state: "ready", events: sampleEvents() });
+          return;
+        }
+        if (!res.ok || !isRecord(body) || !Array.isArray(body.events)) {
+          const kind = isRecord(body) && isFeedErrorKind(body.error) ? body.error : "unexpected";
+          setFeed({ state: "error", kind });
+          return;
+        }
+        setBookingEnabled(true);
+        setFeed({ state: "ready", events: body.events as ClubEvent[] });
+      })
+      .catch(() => {
+        if (!cancelled) setFeed({ state: "error", kind: "network" });
+      });
+
     return () => {
       cancelled = true;
     };
@@ -194,13 +207,21 @@ export default function Home() {
 
       <BookingDialog
         event={openEvent}
-        bookingEnabled={!PREVIEW_MODE}
+        bookingEnabled={bookingEnabled}
         unconfirmed={!!openEvent && unconfirmed.has(openEvent.eventId)}
         onUnconfirmed={(id) => setUnconfirmed((prev) => new Set(prev).add(id))}
         onClose={() => setOpenEventId(null)}
       />
     </div>
   );
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+function isFeedErrorKind(v: unknown): v is FeedErrorKind {
+  return v === "access" || v === "server" || v === "unexpected" || v === "network";
 }
 
 function Notice({ title, body }: { title: string; body: string }) {
