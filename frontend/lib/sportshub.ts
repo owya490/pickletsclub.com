@@ -1,6 +1,7 @@
 const API_URL =
   "https://australia-southeast1-socialsportsprod.cloudfunctions.net/globalAppController";
 export const SPORTSHUB_URL = "https://www.sportshub.net.au";
+export const FEATURED_COLLECTION_ID = "";
 const BOOKING_ORIGIN = SPORTSHUB_URL;
 const INIT_TIMEOUT_MS = 20_000;
 
@@ -146,10 +147,10 @@ function parseEvent(raw: unknown): ClubEvent {
   };
 }
 
-export async function getEvents(partnerKey: string): Promise<ClubEvent[]> {
+async function fetchData(partnerKey: string, endpointType: string, data: unknown): Promise<Record<string, unknown>> {
   let res: Response;
   try {
-    res = await post(partnerKey, { endpointType: "GET_PARTNER_EVENTS", data: {} });
+    res = await post(partnerKey, { endpointType, data });
   } catch {
     throw new FeedError("network");
   }
@@ -162,10 +163,27 @@ export async function getEvents(partnerKey: string): Promise<ClubEvent[]> {
   } catch {
     throw new FeedError("unexpected");
   }
-  if (!isObject(body) || !isObject(body.data) || !Array.isArray(body.data.events)) {
-    throw new FeedError("unexpected");
-  }
-  return body.data.events.map(parseEvent);
+  if (!isObject(body) || !isObject(body.data)) throw new FeedError("unexpected");
+  return body.data;
+}
+
+export async function getEvents(partnerKey: string): Promise<ClubEvent[]> {
+  const data = await fetchData(partnerKey, "GET_PARTNER_EVENTS", {});
+  if (!Array.isArray(data.events)) throw new FeedError("unexpected");
+  return data.events.map(parseEvent);
+}
+
+export async function getBio(partnerKey: string): Promise<string> {
+  const data = await fetchData(partnerKey, "GET_PARTNER_USER", {});
+  if (!isString(data.bio)) throw new FeedError("unexpected");
+  return data.bio.trim();
+}
+
+/** First upcoming event in the collection, or null when it has none. */
+export async function getFeaturedEvent(partnerKey: string, eventCollectionId: string): Promise<ClubEvent | null> {
+  const data = await fetchData(partnerKey, "GET_PARTNER_EVENT_COLLECTION", { eventCollectionId });
+  if (!Array.isArray(data.events)) throw new FeedError("unexpected");
+  return data.events.length ? parseEvent(data.events[0]) : null;
 }
 
 function isValidEntryUrl(v: unknown): v is string {

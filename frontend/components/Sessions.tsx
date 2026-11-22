@@ -2,12 +2,22 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
+import { Bio } from "@/components/Bio";
 import { BookingDialog } from "@/components/BookingDialog";
 import { Calendar } from "@/components/Calendar";
 import { EventCard } from "@/components/EventCard";
 import { dayHeading, formatLongDate, sydneyDayKey } from "@/lib/format";
 import { sampleEvents } from "@/lib/sample-events";
-import { FeedError, getEvents, SPORTSHUB_URL, type ClubEvent, type FeedErrorKind } from "@/lib/sportshub";
+import {
+  FEATURED_COLLECTION_ID,
+  FeedError,
+  getBio,
+  getEvents,
+  getFeaturedEvent,
+  SPORTSHUB_URL,
+  type ClubEvent,
+  type FeedErrorKind,
+} from "@/lib/sportshub";
 
 type Feed =
   | { state: "loading" }
@@ -22,6 +32,8 @@ export function Sessions({ partnerKey }: { partnerKey: string }) {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [openEventId, setOpenEventId] = useState<string | null>(null);
   const [unconfirmed, setUnconfirmed] = useState<Set<string>>(new Set());
+  const [bio, setBio] = useState("");
+  const [featured, setFeatured] = useState<ClubEvent | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -30,6 +42,20 @@ export function Sessions({ partnerKey }: { partnerKey: string }) {
     if (!partnerKey) {
       setFeed({ state: "ready", events: sampleEvents() });
       return;
+    }
+
+    getBio(partnerKey)
+      .then((text) => {
+        if (!cancelled) setBio(text);
+      })
+      .catch(() => {});
+
+    if (FEATURED_COLLECTION_ID) {
+      getFeaturedEvent(partnerKey, FEATURED_COLLECTION_ID)
+        .then((event) => {
+          if (!cancelled) setFeatured(event);
+        })
+        .catch(() => {});
     }
 
     getEvents(partnerKey)
@@ -56,7 +82,8 @@ export function Sessions({ partnerKey }: { partnerKey: string }) {
   }, [events]);
   const eventDays = useMemo(() => new Set(groups.map(([key]) => key)), [groups]);
   const visibleGroups = selectedDay ? groups.filter(([key]) => key === selectedDay) : groups;
-  const openEvent = events.find((e) => e.eventId === openEventId) ?? null;
+  const openEvent =
+    events.find((e) => e.eventId === openEventId) ?? (featured?.eventId === openEventId ? featured : null);
   const calendarMonth = month ?? `${(groups[0]?.[0] ?? todayKey).slice(0, 7)}-01`;
 
   const sessionCount = events.length;
@@ -81,6 +108,17 @@ export function Sessions({ partnerKey }: { partnerKey: string }) {
       </header>
 
       <div className="mx-auto w-full max-w-6xl flex-1 px-5 py-10 sm:px-8 sm:py-14">
+        {bio && <Bio text={bio} />}
+
+        {featured && (
+          <section className="mb-12 max-w-2xl">
+            <h2 className="text-[13px] font-semibold uppercase tracking-wider text-muted">Featured</h2>
+            <div className="mt-3">
+              <EventCard event={featured} onOpen={() => setOpenEventId(featured.eventId)} />
+            </div>
+          </section>
+        )}
+
         <main className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-14">
           <section className="order-2 min-w-0 lg:order-1">
             <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
