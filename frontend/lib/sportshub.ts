@@ -176,7 +176,8 @@ export async function getEvents(partnerKey: string): Promise<ClubEvent[]> {
 export async function getBio(partnerKey: string): Promise<string> {
   const data = await fetchData(partnerKey, "GET_PARTNER_USER", {});
   if (!isString(data.bio)) throw new FeedError("unexpected");
-  return data.bio.trim();
+  const bio = data.bio.trim();
+  return bio.replace(/<[^>]*>|&nbsp;/g, "").trim() ? bio : "";
 }
 
 /** First upcoming event in the collection, or null when it has none. */

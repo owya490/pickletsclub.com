@@ -1,11 +1,16 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
+import { isRichText, richTextHtml } from "@/lib/rich-text";
+
+const RICH_TEXT =
+  "[&_a]:font-medium [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-line [&_blockquote]:pl-3 [&_h2]:mb-1 [&_h2]:font-display [&_h2]:text-xl [&_h3]:mb-1 [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-5 [&_p+p]:mt-2 [&_ul]:list-disc [&_ul]:pl-5";
 
 export function Bio({ text }: { text: string }) {
-  const ref = useRef<HTMLParagraphElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [overflows, setOverflows] = useState(false);
+  const rich = isRichText(text);
 
   useLayoutEffect(() => {
     const el = ref.current;
@@ -17,15 +22,18 @@ export function Bio({ text }: { text: string }) {
     return () => observer.disconnect();
   }, [text, expanded]);
 
+  const className = `mt-3 max-w-2xl text-[15px] leading-relaxed text-ink ${rich ? RICH_TEXT : "whitespace-pre-line"} ${expanded ? "" : "line-clamp-3"}`;
+
   return (
     <section className="mb-10">
       <h2 className="text-[13px] font-semibold uppercase tracking-wider text-muted">About us</h2>
-      <p
-        ref={ref}
-        className={`mt-3 max-w-2xl whitespace-pre-line text-[15px] leading-relaxed text-ink ${expanded ? "" : "line-clamp-3"}`}
-      >
-        {text}
-      </p>
+      {rich ? (
+        <div ref={ref} className={className} dangerouslySetInnerHTML={{ __html: richTextHtml(text) }} />
+      ) : (
+        <div ref={ref} className={className}>
+          {text}
+        </div>
+      )}
       {(overflows || expanded) && (
         <button
           type="button"
