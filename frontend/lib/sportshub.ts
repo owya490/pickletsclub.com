@@ -1,7 +1,7 @@
 const API_URL =
   "https://australia-southeast1-socialsportsprod.cloudfunctions.net/globalAppController";
 export const SPORTSHUB_URL = "https://www.sportshub.net.au";
-export const FEATURED_COLLECTION_ID = "";
+export const FEATURED_COLLECTION_ID = "ehLQ0qMx17nK1gOpg86j";
 const BOOKING_ORIGIN = SPORTSHUB_URL;
 const INIT_TIMEOUT_MS = 20_000;
 
