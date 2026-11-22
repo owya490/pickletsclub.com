@@ -108,15 +108,18 @@ export function Sessions({ partnerKey }: { partnerKey: string }) {
       </header>
 
       <div className="mx-auto w-full max-w-6xl flex-1 px-5 py-10 sm:px-8 sm:py-14">
-        {bio && <Bio text={bio} />}
-
-        {featured && (
-          <section className="mb-12 max-w-2xl">
-            <h2 className="text-[13px] font-semibold uppercase tracking-wider text-muted">Featured</h2>
-            <div className="mt-3">
-              <EventCard event={featured} onOpen={() => setOpenEventId(featured.eventId)} />
-            </div>
-          </section>
+        {featured ? (
+          <div className="mb-12 grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-14">
+            {bio && <Bio text={bio} className="lg:order-2" />}
+            <section className="min-w-0 lg:order-1">
+              <h2 className="text-[13px] font-semibold uppercase tracking-wider text-muted">Featured</h2>
+              <div className="mt-3">
+                <EventCard event={featured} onOpen={() => setOpenEventId(featured.eventId)} />
+              </div>
+            </section>
+          </div>
+        ) : (
+          bio && <Bio text={bio} className="mb-10 max-w-2xl" />
         )}
 
         <main className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-14">
